@@ -1,16 +1,32 @@
+import { db } from '../db';
+import { portfolioStatsTable } from '../db/schema';
 import { type PortfolioStats } from '../schema';
+import { sql } from 'drizzle-orm';
 
 export const incrementVisitorCount = async (): Promise<PortfolioStats> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is incrementing the visitor count in the portfolio stats.
-    // It should update the visitor_count field by 1 and return the updated stats record.
-    // This would typically be called when someone visits the portfolio for the first time.
-    return Promise.resolve({
-        id: 1,
-        total_projects: 0,
-        years_experience: 0,
-        total_likes: 0,
+  try {
+    // Use PostgreSQL's ON CONFLICT to handle upsert operation
+    // If no record exists (first visitor), create one with visitor_count = 1
+    // If record exists, increment visitor_count by 1
+    const result = await db.insert(portfolioStatsTable)
+      .values({
+        id: 1, // We only have one stats record
         visitor_count: 1,
         updated_at: new Date()
-    } as PortfolioStats);
+      })
+      .onConflictDoUpdate({
+        target: portfolioStatsTable.id,
+        set: {
+          visitor_count: sql`${portfolioStatsTable.visitor_count} + 1`,
+          updated_at: new Date()
+        }
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Visitor count increment failed:', error);
+    throw error;
+  }
 };

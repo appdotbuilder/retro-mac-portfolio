@@ -1,14 +1,26 @@
+import { db } from '../db';
+import { feedbackMessagesTable } from '../db/schema';
 import { type CreateFeedbackMessageInput, type FeedbackMessage } from '../schema';
 
 export const createFeedbackMessage = async (input: CreateFeedbackMessageInput): Promise<FeedbackMessage> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new feedback message and persisting it in the database.
-    // It should insert the feedback message data and return the created record.
-    return Promise.resolve({
-        id: 1, // Placeholder ID
+  try {
+    // Insert feedback message record
+    const result = await db.insert(feedbackMessagesTable)
+      .values({
         name: input.name,
         email: input.email,
-        message: input.message,
-        created_at: new Date()
-    } as FeedbackMessage);
+        message: input.message
+      })
+      .returning()
+      .execute();
+
+    // Return the created feedback message
+    const feedbackMessage = result[0];
+    return {
+      ...feedbackMessage
+    };
+  } catch (error) {
+    console.error('Feedback message creation failed:', error);
+    throw error;
+  }
 };

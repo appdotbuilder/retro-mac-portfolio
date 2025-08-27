@@ -1,13 +1,30 @@
+import { db } from '../db';
+import { likesTable } from '../db/schema';
 import { type Like } from '../schema';
 
 export const getLikes = async (): Promise<Like> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is fetching the current like count from the database.
-    // This should return the first (and likely only) row from the likes table.
-    return Promise.resolve({
-        id: 1,
-        count: 0,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Like);
+  try {
+    // Get the first (and likely only) row from the likes table
+    const results = await db.select()
+      .from(likesTable)
+      .limit(1)
+      .execute();
+
+    // If no likes record exists, create a default one
+    if (results.length === 0) {
+      const newLikeResult = await db.insert(likesTable)
+        .values({
+          count: 0
+        })
+        .returning()
+        .execute();
+
+      return newLikeResult[0];
+    }
+
+    return results[0];
+  } catch (error) {
+    console.error('Failed to get likes:', error);
+    throw error;
+  }
 };

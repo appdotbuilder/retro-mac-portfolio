@@ -1,19 +1,31 @@
+import { db } from '../db';
+import { projectsTable } from '../db/schema';
 import { type CreateProjectInput, type Project } from '../schema';
 
 export const createProject = async (input: CreateProjectInput): Promise<Project> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new project and persisting it in the database.
-    // It should insert the project data and return the created record with generated ID.
-    return Promise.resolve({
-        id: 1, // Placeholder ID
+  try {
+    // Insert project record
+    const result = await db.insert(projectsTable)
+      .values({
         title: input.title,
         description: input.description,
-        tags: input.tags || [],
+        tags: input.tags, // JSON field - no conversion needed
         demo_link: input.demo_link,
         image_url: input.image_url,
-        display_order: input.display_order || 0,
-        is_active: input.is_active ?? true,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as Project);
+        display_order: input.display_order, // Integer column - no conversion needed
+        is_active: input.is_active // Boolean column - no conversion needed
+      })
+      .returning()
+      .execute();
+
+    // Return the created project with proper type casting for JSONB field
+    const project = result[0];
+    return {
+      ...project,
+      tags: project.tags as string[] // Cast JSONB field to string array
+    };
+  } catch (error) {
+    console.error('Project creation failed:', error);
+    throw error;
+  }
 };
